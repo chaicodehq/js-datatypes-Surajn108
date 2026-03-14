@@ -47,5 +47,70 @@
  *   //      frequentContact: "Swiggy", allAbove100: false, hasLargeTransaction: true }
  */
 export function analyzeUPITransactions(transactions) {
-  // Your code here
+  // Validation
+  if (!Array.isArray(transactions) || transactions.length === 0) return null;
+
+  const valid = transactions.filter((t) => {
+    if (!t) return false;
+    if (typeof t.amount !== "number" || t.amount <= 0) return false;
+    if (t.type !== "credit" && t.type !== "debit") return false;
+    return true;
+  });
+
+  if (valid.length === 0) return null;
+
+  let totalCredit = 0;
+  let totalDebit = 0;
+  let sumAmounts = 0;
+  let highestTransaction = valid[0];
+  const categoryBreakdown = {};
+  const contactCounts = {};
+  let frequentContact = valid[0].to;
+  let maxContactCount = 0;
+
+  for (const tx of valid) {
+    const { type, amount, to, category } = tx;
+
+    if (type === "credit") totalCredit += amount;
+    else if (type === "debit") totalDebit += amount;
+
+    sumAmounts += amount;
+
+    if (amount > highestTransaction.amount) {
+      highestTransaction = tx;
+    }
+
+    // Category totals (include both credit and debit)
+    if (!categoryBreakdown[category]) categoryBreakdown[category] = 0;
+    categoryBreakdown[category] += amount;
+
+    // Frequent contact counts
+    if (!contactCounts[to]) contactCounts[to] = 0;
+    contactCounts[to] += 1;
+    if (contactCounts[to] > maxContactCount) {
+      maxContactCount = contactCounts[to];
+      frequentContact = to;
+    }
+  }
+
+  const transactionCount = valid.length;
+  const avgTransaction = Math.round(sumAmounts / transactionCount);
+
+  const allAbove100 = valid.every((t) => t.amount > 100);
+  const hasLargeTransaction = valid.some((t) => t.amount >= 5000);
+
+  const netBalance = totalCredit - totalDebit;
+
+  return {
+    totalCredit,
+    totalDebit,
+    netBalance,
+    transactionCount,
+    avgTransaction,
+    highestTransaction,
+    categoryBreakdown,
+    frequentContact,
+    allAbove100,
+    hasLargeTransaction,
+  };
 }
